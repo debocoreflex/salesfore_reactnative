@@ -91,6 +91,10 @@ const UserForm: React.FC = () => {
      
          navigation.navigate('UserList');
     };
+    const handleEdit = () => {
+     
+        navigation.navigate('UserEdit');
+   };
     const getAllUsers = () => {
         const soupName = 'Users';
     
@@ -195,6 +199,10 @@ const UserForm: React.FC = () => {
 
             <View style={{ marginTop: 10 }}>
             <Button title="Next Page" onPress={handleNext} />
+            </View>
+
+            <View style={{ marginTop: 10 }}>
+            <Button title="Edit Page" onPress={handleEdit} />
             </View>
         </View>
     );

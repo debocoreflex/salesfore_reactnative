@@ -5,7 +5,7 @@ import { database } from '../database';
 import { UserSchema as Users } from '../database/models/UserSchema';
 
 // const dummyAdd = [{ "dob": "1998-30-06", "experience": "2", "gender": "Female", "maritalStatus": "Married", "mobile": "8240643961", "name": "smartstoredb" }]
-const dummyAdd = Array.from({ length: 100 }, (_, i) => ({
+const dummyAdd = Array.from({ length: 10 }, (_, i) => ({
     name: `User ${i + 1}`,
     dob: "1998-06-30",
     experience: `${(i % 10) + 1}`,

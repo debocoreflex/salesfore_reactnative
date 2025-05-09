@@ -38,6 +38,7 @@ import { oauth, net } from 'react-native-force';
 import HelloScreen from './src/HelloScreen';
 import UserForm from './src/Screens/UserForm';
 import UserList from './src/Screens/UserList';
+import EditScreen from './src/Screens/EditScreen';
 
 interface Response {
     records: Record[]
@@ -121,6 +122,7 @@ function App(): JSX.Element {
             <Stack.Screen name="Static" component={HelloScreen} />
             <Stack.Screen name="UserForm" component={UserForm} />
             <Stack.Screen name="UserList" component={UserList} />
+            <Stack.Screen name="UserEdit" component={EditScreen} />
           </Stack.Navigator>
         </NavigationContainer>
     );
