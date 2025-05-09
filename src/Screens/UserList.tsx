@@ -1,11 +1,18 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { FlatList, View, Text, StyleSheet, Button, TouchableOpacity } from 'react-native';
 import { smartstore } from 'react-native-force';
+import { database } from '../database';
+import { UserSchema as Users } from '../database/models/UserSchema';
 
-const dummyAdd = [{ "dob": "1998-30-06", "experience": "2", "gender": "Female", "maritalStatus": "Married", "mobile": "8240643966", "name": "wasil1" }]
+const dummyAdd = [{ "dob": "1998-30-06", "experience": "2", "gender": "Female", "maritalStatus": "Married", "mobile": "8240643961", "name": "smartstoredb" }]
+import { Q } from '@nozbe/watermelondb';
+import { useObservableState } from 'observable-hooks';
+
+
 
 const UserList = () => {
     const [users, setUsers] = React.useState<{ id: any; name: any; gender: any; mobile: any }[]>([]);
+    const [wmusers, setWMusers] = React.useState<{ id: any; name: any; gender: any; mobile: any }[]>([]);
 
     React.useEffect(() => {
         const fetchUsers = async () => {
@@ -33,8 +40,27 @@ const UserList = () => {
             }
         };
 
+     
+
         fetchUsers();
+      
     }, []);
+
+    useEffect(() => {
+        const fetchWMUsers = async () => {
+            const allUsers = await database.get<Users>('Users').query().fetch();
+            setWMusers(allUsers);
+
+
+            const wmCollection = database.get<Users>('Users');
+            const wmUsers$ = wmCollection.query(Q.sortBy('name')).observe();
+            
+            const wmuserss = useObservableState(wmUsers$, []);
+            setWMusers(wmuserss)
+          };
+
+          fetchWMUsers();
+    },[wmusers])
 
     const renderItem = ({ item }: { item: typeof users[0] }) => (
         <View key={item.id} style={styles.row}>
@@ -54,6 +80,7 @@ const UserList = () => {
             experience: dummyAdd[0]?.experience,
             mobile: dummyAdd[0]?.mobile,
         };
+        createUser();
 
         const querySpec = smartstore.buildExactQuerySpec('mobile', newUser.mobile, 10, 'ascending');
 
@@ -86,30 +113,58 @@ const UserList = () => {
         );
 
     }
+    const createUser = async () => {
+        try {
+            await database.write(async () => {
+                await database.get<Users>('Users').create(user => {
+                    user.name = "watermelon";
+                    user.dob = "1998-30-06";
+                    user.maritalStatus = "Single";
+                    user.mobile = "8240643967";
+                    user.experience =" 8";
+                    user.gender = "Female";
+                });
+            });
+
+
+            console.log('User saved successfully');
+        } catch (error) {
+            console.error('Failed to save user:', error);
+        }
+    };
+
     return (
-        <View>
+        <View style={{ flex: 1 }}>
             <View style={{ alignItems: 'center', marginBottom: 10 }}>
-                <TouchableOpacity
-                    onPress={handleAdd}
-                    style={{
-                        maxWidth: '50%',
-                        width: '100%',
-                        padding: 10,
-                        backgroundColor: '#007BFF',
-                        borderRadius: 8,
-                        alignItems: 'center',
-                    }}
-                >
-                    <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>Add to DB</Text>
-                </TouchableOpacity>
+            <TouchableOpacity
+                onPress={handleAdd}
+                style={{
+                maxWidth: '50%',
+                width: '100%',
+                padding: 10,
+                backgroundColor: '#007BFF',
+                borderRadius: 8,
+                alignItems: 'center',
+                }}
+            >
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>Add to DB</Text>
+            </TouchableOpacity>
             </View>
 
+            <View style={{ flex: 1, flexDirection: 'row' }}>
             <FlatList
                 data={users}
                 keyExtractor={(item) => item.id}
                 renderItem={renderItem}
-                contentContainerStyle={styles.container}
+                contentContainerStyle={[styles.container, { flex: 1 }]}
             />
+            <FlatList
+                data={wmusers}
+                keyExtractor={(item) => item.id}
+                renderItem={renderItem}
+                contentContainerStyle={[styles.container, { flex: 1 }]}
+            />
+            </View>
         </View>
     );
 };

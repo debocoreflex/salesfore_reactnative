@@ -6,6 +6,9 @@ import { smartstore } from 'react-native-force';
 import { useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
 
+import { database } from '../database';
+import { UserSchema as Users } from '../database/models/UserSchema';
+
 const UserForm: React.FC = () => {
     const [name, setName] = useState('');
     const [dob, setDob] = useState('');
@@ -25,6 +28,7 @@ const UserForm: React.FC = () => {
             experience,
             mobile
         };
+        createUser();
 
 
 
@@ -46,7 +50,7 @@ const UserForm: React.FC = () => {
                     );
                 } else {
                     console.log('User with this mobile number already exists!');
-                   getAllUsers();
+                  // getAllUsers();
                    
                 }
 
@@ -60,7 +64,28 @@ const UserForm: React.FC = () => {
             (err) => console.error('Query error:', err)
         );
 
+        
+
     };
+     const createUser = async () => {
+            try {
+                await database.write(async () => {
+                    await database.get<Users>('Users').create(user => {
+                        user.name = name;
+                        user.dob = "1998-30-06";
+                        user.maritalStatus = maritalStatus;
+                        user.mobile = mobile;
+                        user.experience =experience;
+                        user.gender = gender;
+                    });
+                });
+    
+    
+                console.log('User saved successfully WaterMelon');
+            } catch (error) {
+                console.error('Failed to save user:', error);
+            }
+        };
 
     const handleNext = () => {
      
