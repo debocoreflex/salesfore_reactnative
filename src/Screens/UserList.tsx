@@ -3,6 +3,10 @@ import { FlatList, View, Text, StyleSheet, Button, TouchableOpacity, ScrollView 
 import { smartstore } from 'react-native-force';
 import { database } from '../database';
 import { UserSchema as Users } from '../database/models/UserSchema';
+import { Q } from '@nozbe/watermelondb';
+import { SmartStoreObserver } from '../smartstore/SmartStoreObserver';
+
+
 
 // const dummyAdd = [{ "dob": "1998-30-06", "experience": "2", "gender": "Female", "maritalStatus": "Married", "mobile": "8240643961", "name": "smartstoredb" }]
 const dummyAdd = Array.from({ length: 10 }, (_, i) => ({
@@ -14,18 +18,10 @@ const dummyAdd = Array.from({ length: 10 }, (_, i) => ({
     mobile: `82406439${String(60 + i).padStart(2, '0')}`,
 }));
 
-import { Q } from '@nozbe/watermelondb';
-
-
-
-
 const UserList = () => {
     const [users, setUsers] = React.useState<{ id: any; name: any; gender: any; mobile: any }[]>([]);
     const [wmusers, setWMusers] = React.useState<{ id: any; name: any; gender: any; mobile: any }[]>([]);
 
-    React.useEffect(() => {
-        fetchUsers();
-    }, []);
 
     const fetchUsers = useCallback(() => {
         const querySpec = smartstore.buildAllQuerySpec('id', 'ascending', 1000);
@@ -41,12 +37,23 @@ const UserList = () => {
         }, console.error);
     }, []);
 
+    useEffect(() => {
+        fetchUsers();
+        const unsubscribe = SmartStoreObserver.subscribe(fetchUsers);
+        return unsubscribe; // ✅ Clean unmount
+
+        console.log('SmartStore: Users fetched');
+    }, [fetchUsers]);
+
+
+
 
     useEffect(() => {
         const wmCollection = database.get<Users>('Users');
         const wmUsers$ = wmCollection.query(Q.sortBy('name')).observe();
         const subscription = wmUsers$.subscribe(setWMusers);
 
+        console.log('wmdb: Users fetched');
         return () => subscription.unsubscribe(); // Cleanup on unmount
     }, []);
 
@@ -58,29 +65,20 @@ const UserList = () => {
             <Text style={styles.mobile}>{item.mobile}</Text>
         </View>
     );
- 
+
+
+
     const handleAdd = () => {
-        let insertCount = 0;
-        dummyAdd.forEach((user, index) => {
+        dummyAdd.forEach((user) => {
             createUser(user); // WatermelonDB insert
 
+            // Avoid duplicates: check if mobile already exists (optional)
             const querySpec = smartstore.buildExactQuerySpec('mobile', user.mobile, 1, 'ascending');
             smartstore.querySoup(true, "Users", querySpec, (cursor) => {
                 if (cursor.currentPageOrderedEntries.length === 0) {
-                    smartstore.upsertSoupEntries(true, 'Users', [user], () => {
-                        insertCount++;
-                        if (insertCount === dummyAdd.length) {
-                            fetchUsers(); // Refresh SmartStore list only once after last insert
-                        }
-                    }, console.error);
+                    SmartStoreObserver.upsert([user]); // 👈 Now emits update
                 }
-
-                smartstore.closeCursor(
-                    true,
-                    cursor,
-                    () => console.log('Cursor closed successfully'),
-                    (err) => console.error('Error closing cursor:', err)
-                );
+                smartstore.closeCursor(true, cursor, () => { }, console.error);
             }, console.error);
         });
     };
@@ -125,7 +123,7 @@ const UserList = () => {
                 });
             });
 
-            console.log(`WatermelonDB: Saved user ${user.name}`);
+           // console.log(`WatermelonDB: Saved user ${user.name}`);
         } catch (error) {
             console.error(`Failed to save user ${user.name}:`, error);
         }
